@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
+import { getStorage } from "firebase/storage";
 
 //My web app's FB config
 const firebaseConfig = {
@@ -18,5 +19,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 
 //my web app linked to fb db via 17
-// Get a reference to the database service and export the reference for other modules
+// Get a reference to the database and storage service and export the reference for other modules
 export const database = getDatabase(firebaseApp);
+export const storage = getStorage(firebaseApp);

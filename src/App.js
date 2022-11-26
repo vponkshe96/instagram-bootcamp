@@ -1,11 +1,17 @@
 import React from "react";
-import { onChildAdded, push, ref, set } from "firebase/database";
-import { database } from "./firebase";
+import { onChildAdded, push, ref as databaseRef, set } from "firebase/database";
+import { database, storage } from "./firebase";
 import logo from "./logo.png";
 import "./App.css";
+import {
+  uploadBytes,
+  ref as storageRef,
+  getDownloadURL,
+} from "firebase/storage";
 
 // Save the Firebase message folder name as a constant to avoid bugs due to misspelling
 const DB_MESSAGES_KEY = "messages";
+const DB_POSTS_KEY = "posts";
 
 class App extends React.Component {
   constructor(props) {
@@ -14,12 +20,13 @@ class App extends React.Component {
     // When Firebase changes, update local state, which will update local UI
     this.state = {
       messages: [],
-      inputValue: " ",
+      textInputValue: "",
+      fileInputFile: "",
     };
   }
 
   componentDidMount() {
-    const messagesRef = ref(database, DB_MESSAGES_KEY);
+    const messagesRef = databaseRef(database, DB_MESSAGES_KEY);
     // onChildAdded will return data for every child at the reference and every subsequent new child
     onChildAdded(messagesRef, (data) => {
       // Add the subsequent child to local component state, initialising a new array to trigger re-render
@@ -32,20 +39,53 @@ class App extends React.Component {
 
   //adds data to db
   writeData = (input) => {
-    const messageListRef = ref(database, DB_MESSAGES_KEY);
+    const messageListRef = databaseRef(database, DB_MESSAGES_KEY);
     const newMessageRef = push(messageListRef);
     set(newMessageRef, input);
   };
 
   //form handler
-  handleChange = (e) => {
-    this.setState({ inputValue: e.target.value });
+  handleTextChange = (e) => {
+    this.setState({ textInputValue: e.target.value });
   };
 
-  handleSubmit = (e) => {
-    e.preventDefault();
-    this.writeData(this.state.inputValue);
+  handleFileChange = (e) => {
+    // e.target.files is a FileList object that is an array of File objects
+    // e.target.files[0] is a File object that Firebase Storage can upload
+    this.setState({
+      fileInputFile: e.target.files[0],
+    });
   };
+
+  uploadSend = (e) => {
+    e.preventDefault();
+    this.writeData(this.state.textInputValue);
+  };
+
+  uploadImage = (e) => {
+    e.preventDefault();
+    //linking my storage bucket with app and telling it what to name user uploaded images
+    const imageRef = storageRef(storage, `${this.state.fileInputFile.name}`);
+    //upload image
+    uploadBytes(imageRef, this.state.fileInputFile)
+      //handling the success state of the promise, .then has access to the success value via callback, we ask it to return another promise
+      .then(() => getDownloadURL(imageRef))
+      //handling the second promise, success value is a the url of the uploaded image which is accessed via callback
+      .then((downloadURL) => {
+        const postListRef = databaseRef(database, DB_POSTS_KEY);
+        const newPostRef = push(postListRef);
+        set(newPostRef, {
+          imageLink: downloadURL,
+          text: this.state.fileInputFile.name,
+        });
+        // Reset input field after submit
+        this.setState({
+          fileInputFile: null,
+          textInputValue: "",
+        });
+      });
+  };
+
   render() {
     // Convert messages in state to message JSX elements to render
     let messageListItems = this.state.messages.map((message) => (
@@ -58,16 +98,23 @@ class App extends React.Component {
           <p>
             Edit <code>src/App.js</code> and save to reload.
           </p>
-          {/* TODO: Add input field and add text input as messages in Firebase */}
-          <form onSubmit={this.handleSubmit}>
+          <form>
             <label>Write message</label>
             <br />
             <input
               type="input"
-              value={this.state.inputValue}
-              onChange={this.handleChange}
-            ></input>
-            <button>Send</button>
+              value={this.state.textInputValue}
+              onChange={this.handleTextChange}
+            />
+            <button onClick={this.uploadSend}>Send</button>
+            <br />
+            <br />
+            <input
+              type="file"
+              value={this.state.fileInputValue}
+              onChange={this.handleFileChange}
+            />
+            <button onClick={this.uploadImage}>Upload</button>
             <ul>{messageListItems}</ul>
           </form>
         </header>
