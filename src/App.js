@@ -9,7 +9,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
-// Save the Firebase message folder name as a constant to avoid bugs due to misspelling
+//Folder Names in FB DB and Storage Bucket
 const DB_MESSAGES_KEY = "messages";
 const DB_POSTS_KEY = "posts";
 
@@ -37,12 +37,12 @@ class App extends React.Component {
     });
   }
 
-  //adds data to db
-  writeData = (input) => {
-    const messageListRef = databaseRef(database, DB_MESSAGES_KEY);
-    const newMessageRef = push(messageListRef);
-    set(newMessageRef, input);
-  };
+  // //adds data to db
+  // writeData = (input) => {
+  //   const messageListRef = databaseRef(database, DB_MESSAGES_KEY);
+  //   const newMessageRef = push(messageListRef);
+  //   set(newMessageRef, input);
+  // };
 
   //form handler
   handleTextChange = (e) => {
@@ -59,7 +59,13 @@ class App extends React.Component {
 
   uploadSend = (e) => {
     e.preventDefault();
-    this.writeData(this.state.textInputValue);
+    //below using all FB functions
+    const messageListRef = databaseRef(database, DB_MESSAGES_KEY);
+    //access FB DB and create a folder called messages
+    const newMessageRef = push(messageListRef);
+    //add a child node to parent node, value undefined at the moment
+    set(newMessageRef, this.state.textInputValue);
+    //set value of the child node as our user input
   };
 
   uploadImage = (e) => {
